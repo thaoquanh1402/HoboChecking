@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công cụ tính điểm GPA & Quản lý</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .searchable-select-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .searchable-select-wrapper::after {
+            content: '▼';
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: #777;
+            pointer-events: none;
+        }
+        .searchable-select-wrapper input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            cursor: text;
+            font-size: 1em;
+        }
+        .searchable-select-wrapper input[type="text"]:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            color: #777;
+        }
+        .dropdown-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .dropdown-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item:hover { background-color: #eaf2f8; color: #2980b9; font-weight: bold; }
+        
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .info-box {
+            background: #eaf2f8;
+            padding: 10px;
+            border-left: 4px solid #3498db;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+        button, .btn-label, .btn-doc, .btn-contribute {
+            padding: 10px 15px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            text-align: center;
+            display: inline-block;
+            box-sizing: border-box;
+            text-decoration: none;
+        }
+        #addSubjectBtn {
+            width: 100%;
+            background-color: #27ae60;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        #addSubjectBtn:hover { filter: brightness(90%); }
+        
+        .btn-doc { background-color: #f39c12; width: 100%; margin-bottom: 15px; }
+        .btn-doc:hover { background-color: #d68910; }
+
+        .btn-doc-small {
+            background-color: #2980b9;
+            color: white;
+            padding: 6px 12px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.9em;
+            display: inline-block;
+        }
+        .btn-doc-small:hover { background-color: #1f618d; }
+
+        .btn-action-group { display: flex; gap: 5px; justify-content: center; }
+        .btn-edit { background-color: #f39c12; padding: 5px 10px; font-size: 0.9em; }
+        .btn-edit:hover { background-color: #d68910; }
+        .btn-danger { background-color: #e74c3c; padding: 5px 10px; font-size: 0.9em; }
+        .btn-danger:hover { background-color: #c0392b; }
+        
+        .btn-export { background-color: #3498db; width: 48%; }
+        .btn-export:hover { background-color: #2980b9; }
+        .btn-import { background-color: #9b59b6; width: 48%; float: right; }
+        .btn-import:hover { background-color: #8e44ad; }
+
+        .file-actions { margin-top: 20px; overflow: hidden; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 0.95em;
+        }
+        table, th, td { border: 1px solid #ddd; }
+        th, td { padding: 10px; text-align: center; }
+        th { background-color: #34495e; color: white; }
+        
+        .result-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fdfefe;
+            border: 1px solid #d5dbdb;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .footer-note {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #7f8c8d;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        .footer-note a { color: #e74c3c; text-decoration: none; font-weight: bold; }
+        .footer-note a:hover { text-decoration: underline; }
+        
+        #contributeSection { margin-top: 20px; text-align: center; display: none; }
+        .btn-contribute {
+            background-color: #1abc9c;
+            width: 100%;
+            font-size: 1.1em;
+            box-shadow: 0 4px 6px rgba(26, 188, 156, 0.3);
+            transition: transform 0.2s;
+        }
+        .btn-contribute:hover { background-color: #16a085; transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Hệ Thống Nhập Điểm & Tính GPA</h2>
+    
+    <div class="form-group">
+        <label for="subjectSearch">Tìm kiếm & Chọn môn học:</label>
+        <div class="searchable-select-wrapper">
+            <input type="text" id="subjectSearch" placeholder="-- Gõ để tìm môn học (VD: Hóa) --" autocomplete="off">
+            <div class="dropdown-list" id="dropdownList"></div>
+        </div>
+    </div>
+
+    <div id="subjectInfo" class="info-box" style="display: none;">
+        <strong>Thông tin:</strong> <span id="infoText"></span>
+    </div>
+
+    <a id="docBtn" href="#" target="_blank" class="btn-doc" style="display: none;">📚 Nhận tài liệu môn học</a>
+
+    <div class="form-group" id="processGroup" style="display: none;">
+        <label for="processScore">Điểm quá trình (Hệ số <span id="processWeightText"></span>):</label>
+        <input type="number" id="processScore" min="0" max="10" step="0.1" placeholder="Nhập điểm từ 0-10">
+    </div>
+
+    <div class="form-group" id="finalGroup" style="display: none;">
+        <label for="finalScore">Điểm cuối kì (Hệ số <span id="finalWeightText"></span>):</label>
+        <input type="number" id="finalScore" min="0" max="10" step="0.1" placeholder="Nhập điểm từ 0-10">
+    </div>
+
+    <button id="addSubjectBtn" style="display: none;">Thêm môn học vào bảng tính</button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Môn học</th>
+                <th>Mã MH</th>
+                <th>Tín chỉ</th>
+                <th>Điểm hệ 10</th>
+                <th>Điểm chữ</th>
+                <th>Điểm hệ 4.0</th>
+                <th>Tài liệu</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody id="resultTableBody">
+            <!-- Dữ liệu -->
+        </tbody>
+    </table>
+
+    <div class="result-section">
+        Tổng số tín chỉ tích lũy: <span id="totalCreditsOut" style="color: #2980b9;">0</span> <br><br>
+        Điểm Tổng Kết Trung Bình (GPA): <span id="gpaOut" style="color: #c0392b;">0.00</span>
+    </div>
+
+    <div class="file-actions">
+        <button id="exportBtn" class="btn-export">💾 Lưu file dữ liệu</button>
+        <label for="importBtn" class="btn-label btn-import">📂 Tải lên file dữ liệu</label>
+        <input type="file" id="importBtn" accept=".json" style="display: none;">
+    </div>
+
+    <div class="footer-note">
+        Phát hiện lỗi hệ thống hoặc cần hỗ trợ? <a href="https://facebook.com/x2r2r9" target="_blank">Báo lỗi tại đây</a>.
+    </div>
+
+    <div id="contributeSection">
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSc43VxdnS5ormWxXYs9KZuEnoZRZCKxiHHsi2AKO7eiI348Cw/viewform" target="_blank" class="btn-contribute">
+             Chúc mừng bạn đạt điểm A! Nhấn vào đây để đóng góp tài liệu cho khóa sau nha :>
+        </a>
+    </div>
+</div>
+
+<script>
+    const database = [
+         { id: 1, name: 'Đại số', code: 'MI1036', credits: 4, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=559914829#gid=559914829' },
+  { id: 2, name: 'Hóa I', code: 'CH1018E', credits: 2, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?gid=71862001#gid=71862001' },
+  { id: 3, name: 'Tư tưởng Hồ Chí Minh', code: 'SSH1151', credits: 2, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?gid=1595122547#gid=1595122547' },
+  { id: 4, name: 'Vật lý đại cương 1', code: 'PH1016', credits: 4, weight: 0.6, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1958786211#gid=1958786211' },
+  { id: 5, name: 'Thí nghiệm Hóa Lý', code: 'CH3082E', credits: 1, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1278635437#gid=1278635437' },
+  { id: 6, name: 'Pháp luật đại cương', code: 'EM1170', credits: 2, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1640084910#gid=1640084910' },
+  { id: 7, name: 'Vật lý đại cương 2', code: 'PH1026', credits: 4, weight: 0.6, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=399951441#gid=399951441' },
+  { id: 8, name: 'Thí nghiệm Hóa phân tích', code: 'CH3318E', credits: 1, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1128729983#gid=1128729983' },
+  { id: 9, name: 'Kinh tế chính trị', code: 'SSH1121', credits: 2, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=275427903#gid=275427903' },
+  { id: 10, name: 'Tin học đại cương', code: 'IT1016', credits: 3, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=836243525#gid=836243525' },
+  { id: 11, name: 'Hóa Lý', code: 'CH3081E', credits: 2, weight: 0.6, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1920708441#gid=1920708441' },
+  { id: 12, name: 'Giải tích I', code: 'MI1016', credits: 4, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=254104075#gid=254104075' },
+  { id: 13, name: 'Giải tích II', code: 'MI1026', credits: 4, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=154393264#gid=154393264' },
+  { id: 14, name: 'Hóa phân tích', code: 'CH3316E', credits: 2, weight: 0.7, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1341248812#gid=1341248812' },
+  { id: 15, name: 'Hoá Sinh', code: 'BF2702E', credits: 4, weight: 0.7, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1414120560#gid=1414120560' },
+  { id: 16, name: 'Thí nghiệm Hoá Sinh', code: 'BF2703E', credits: 2, weight: 0.7, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1661701860#gid=1661701860' },
+  { id: 17, name: 'Hoá Hữu Cơ', code: 'CH3224E', credits: 2, weight: 0.7, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=836077525#gid=836077525' },
+  { id: 18, name: 'Tâm lý học ứng dụng', code: 'ED3280', credits: 2, weight: 0.7, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=985842818#gid=985842818' },
+  { id: 19, name: 'Về kĩ thuật', code: 'ME2016', credits: 2, weight: 0.7, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1916728305#gid=1916728305' },
+  { id: 20, name: 'Thiết kế quảng bá sản phẩm', code: 'ME3124', credits: 2, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=2088698558#gid=2088698558' },
+  ];
+
+
+    let addedSubjectsList = [];
+    let editIndex = -1;
+    let currentSelectedSubjectId = null;
+
+    const subjectSearch = document.getElementById('subjectSearch');
+    const dropdownList = document.getElementById('dropdownList');
+    const subjectInfo = document.getElementById('subjectInfo');
+    const infoText = document.getElementById('infoText');
+    const docBtn = document.getElementById('docBtn');
+    const processGroup = document.getElementById('processGroup');
+    const finalGroup = document.getElementById('finalGroup');
+    const processScore = document.getElementById('processScore');
+    const finalScore = document.getElementById('finalScore');
+    const processWeightText = document.getElementById('processWeightText');
+    const finalWeightText = document.getElementById('finalWeightText');
+    const addSubjectBtn = document.getElementById('addSubjectBtn');
+    const resultTableBody = document.getElementById('resultTableBody');
+    const totalCreditsOut = document.getElementById('totalCreditsOut');
+    const gpaOut = document.getElementById('gpaOut');
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const contributeSection = document.getElementById('contributeSection');
+
+    function renderDropdown(filterText = '') {
+        dropdownList.innerHTML = '';
+        
+        const filtered = database.filter(sub => 
+            sub.name.toLowerCase().includes(filterText.toLowerCase()) || 
+            sub.code.toLowerCase().includes(filterText.toLowerCase())
+        );
+
+        if(filtered.length === 0) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'dropdown-item';
+            emptyDiv.style.color = '#e74c3c';
+            emptyDiv.textContent = 'Không tìm thấy môn học nào...';
+            dropdownList.appendChild(emptyDiv);
+            return;
+        }
+
+        filtered.forEach(sub => {
+            const div = document.createElement('div');
+            div.className = 'dropdown-item';
+            div.textContent = `${sub.name} (${sub.code})`;
+            div.onclick = () => {
+                selectSubject(sub.id);
+                dropdownList.style.display = 'none';
+            };
+            dropdownList.appendChild(div);
+        });
+    }
+
+    subjectSearch.addEventListener('focus', () => {
+        renderDropdown(subjectSearch.value);
+        dropdownList.style.display = 'block';
+    });
+
+    subjectSearch.addEventListener('input', (e) => {
+        currentSelectedSubjectId = null; 
+        renderDropdown(e.target.value);
+        dropdownList.style.display = 'block';
+    });
+
+    document.addEventListener('click', (e) => {
+        if(!document.querySelector('.searchable-select-wrapper').contains(e.target)) {
+            dropdownList.style.display = 'none';
+        }
+    });
+
+    function selectSubject(id) {
+        currentSelectedSubjectId = id;
+        const subject = database.find(s => s.id === id);
+
+        if (subject) {
+            subjectSearch.value = `${subject.name} (${subject.code})`;
+            
+            subjectInfo.style.display = 'block';
+            infoText.innerHTML = `${subject.name} - Mã: ${subject.code} - Tín chỉ: ${subject.credits} - Trọng số cuối kì: ${subject.weight}`;
+            
+            if(subject.docUrl && subject.docUrl.trim() !== '') {
+                docBtn.style.display = 'block';
+                docBtn.href = subject.docUrl;
+            } else {
+                docBtn.style.display = 'none';
+            }
+
+            finalGroup.style.display = 'block';
+            finalWeightText.textContent = subject.weight;
+            addSubjectBtn.style.display = 'block';
+
+            if (editIndex === -1) {
+                processScore.value = '';
+                finalScore.value = '';
+            }
+
+            if (subject.weight === 1.0) {
+                processGroup.style.display = 'none';
+            } else {
+                processGroup.style.display = 'block';
+                processWeightText.textContent = Math.round((1 - subject.weight) * 10) / 10; 
+            }
+        }
+    }
+
+
+    function calculateGrade(totalScore10, pScore, fScore, weight) {
+        let letter = '';
+        let scale4 = 0.0;
+
+        // Xác định xem môn học có bị điểm liệt (dưới 3) ở bất kỳ học phần nào không
+        const isLietQuaTrinh = (weight !== 1.0 && pScore < 3);
+        const isLietCuoiKi = (fScore < 3);
+
+        // Bất chấp điểm tổng kết là bao nhiêu, nếu dính điểm liệt thì tự động F và 0.0
+        if (isLietQuaTrinh || isLietCuoiKi || totalScore10 < 4.0) {
+            letter = 'F';
+            scale4 = 0.0;
+        } else if (totalScore10 >= 9.5) { letter = 'A+'; scale4 = 4.0; }
+        else if (totalScore10 >= 8.5) { letter = 'A'; scale4 = 4.0; }
+        else if (totalScore10 >= 8.0) { letter = 'B+'; scale4 = 3.5; }
+        else if (totalScore10 >= 7.0) { letter = 'B'; scale4 = 3.0; }
+        else if (totalScore10 >= 6.5) { letter = 'C+'; scale4 = 2.5; }
+        else if (totalScore10 >= 5.5) { letter = 'C'; scale4 = 2.0; }
+        else if (totalScore10 >= 5.0) { letter = 'D+'; scale4 = 1.5; }
+        else if (totalScore10 >= 4.0) { letter = 'D'; scale4 = 1.0; }
+
+        return { letter, scale4 };
+    }
+
+    addSubjectBtn.addEventListener('click', function() {
+        if (!currentSelectedSubjectId) {
+            alert('Vui lòng chọn một môn học hợp lệ từ danh sách thả xuống!');
+            return;
+        }
+
+        const subject = database.find(s => s.id === currentSelectedSubjectId);
+        let pScore = 0;
+        const fScore = parseFloat(finalScore.value);
+
+        if (isNaN(fScore) || fScore < 0 || fScore > 10) {
+            alert('Vui lòng nhập điểm cuối kì hợp lệ (0-10)');
+            return;
+        }
+
+        if (subject.weight !== 1.0) {
+            pScore = parseFloat(processScore.value);
+            if (isNaN(pScore) || pScore < 0 || pScore > 10) {
+                alert('Vui lòng nhập điểm quá trình hợp lệ (0-10)');
+                return;
+            }
+        }
+
+        const pWeight = 1 - subject.weight;
+
+        let total10 = (pScore * pWeight) + (fScore * subject.weight);
+        total10 = Math.round(total10 * 10) / 10;
+
+        // Chuyển điểm hệ 10
+        const grade = calculateGrade(total10, pScore, fScore, subject.weight);
+
+        const newSubjectData = {
+            id: subject.id,
+            name: subject.name,
+            code: subject.code,
+            credits: subject.credits,
+            weight: subject.weight,
+            docUrl: subject.docUrl, 
+            pScore: pScore, 
+            fScore: fScore,
+            score10: total10, 
+            letter: grade.letter,
+            scale4: grade.scale4
+        };
+
+        if (editIndex === -1) {
+            addedSubjectsList.push(newSubjectData);
+        } else {
+            addedSubjectsList[editIndex] = newSubjectData;
+            editIndex = -1;
+            addSubjectBtn.textContent = "Thêm môn học vào bảng tính";
+            addSubjectBtn.style.backgroundColor = "#27ae60"; 
+            subjectSearch.disabled = false;
+        }
+
+        subjectSearch.value = '';
+        currentSelectedSubjectId = null;
+        subjectInfo.style.display = 'none';
+        docBtn.style.display = 'none';
+        processGroup.style.display = 'none';
+        finalGroup.style.display = 'none';
+        addSubjectBtn.style.display = 'none';
+        
+        updateUI();
+    });
+
+    window.editSubject = function(index) {
+        const item = addedSubjectsList[index];
+        editIndex = index; 
+
+        subjectSearch.disabled = true; 
+        selectSubject(item.id);
+
+        if (item.weight !== 1.0) {
+            processScore.value = item.pScore !== undefined ? item.pScore : '';
+        }
+        finalScore.value = item.fScore !== undefined ? item.fScore : '';
+
+        addSubjectBtn.textContent = "Cập nhật kết quả môn học";
+        addSubjectBtn.style.backgroundColor = "#2980b9"; 
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.removeSubject = function(index) {
+        if (editIndex === index) {
+            alert("Bạn đang sửa môn này. Vui lòng hoàn tất hoặc tải lại trang.");
+            return;
+        }
+        
+        addedSubjectsList.splice(index, 1);
+        
+        if (editIndex > index) {
+            editIndex--;
+        }
+
+        updateUI();
+    };
+
+    function updateUI() {
+        renderTable();
+        calculateGPA();
+        checkExcellentGrade();
+    }
+
+    function renderTable() {
+        resultTableBody.innerHTML = '';
+        addedSubjectsList.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            
+            let docContent = '';
+            if (item.docUrl && item.docUrl.trim() !== '') {
+                docContent = `<a href="${item.docUrl}" target="_blank" class="btn-doc-small">Mở file</a>`;
+            } else {
+                docContent = `<span style="color: #7f8c8d; font-style: italic;">Không có</span>`;
+            }
+
+            tr.innerHTML = `
+                <td>${item.name}</td>
+                <td>${item.code}</td>
+                <td>${item.credits}</td>
+                <td>${item.score10}</td>
+                <td><strong>${item.letter}</strong></td>
+                <td><strong>${item.scale4}</strong></td>
+                <td>${docContent}</td> 
+                <td>
+                    <div class="btn-action-group">
+                        <button class="btn-edit" onclick="editSubject(${index})">Sửa</button>
+                        <button class="btn-danger" onclick="removeSubject(${index})">Xóa</button>
+                    </div>
+                </td>
+            `;
+            resultTableBody.appendChild(tr);
+        });
+    }
+
+    function calculateGPA() {
+        let totalCredits = 0;
+        let totalPoints = 0;
+
+        addedSubjectsList.forEach(item => {
+            totalCredits += item.credits;
+            totalPoints += (item.scale4 * item.credits);
+        });
+
+        const gpa = totalCredits === 0 ? 0 : (totalPoints / totalCredits).toFixed(2);
+        
+        totalCreditsOut.textContent = totalCredits;
+        gpaOut.textContent = gpa;
+    }
+
+    function checkExcellentGrade() {
+        const hasA = addedSubjectsList.some(item => item.letter === 'A' || item.letter === 'A+');
+        if (hasA) {
+            contributeSection.style.display = 'block';
+        } else {
+            contributeSection.style.display = 'none';
+        }
+    }
+
+    exportBtn.addEventListener('click', function() {
+        if(addedSubjectsList.length === 0) {
+            alert("Chưa có dữ liệu để lưu!");
+            return;
+        }
+        const dataStr = JSON.stringify(addedSubjectsList, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "ket_qua_gpa.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    importBtn.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if(Array.isArray(importedData)) {
+                    addedSubjectsList = importedData;
+                    updateUI();
+                    alert("Đã tải dữ liệu thành công!");
+                } else {
+                    alert("File không đúng định dạng dữ liệu GPA.");
+                }
+            } catch (error) {
+                alert("Lỗi đọc file: Đảm bảo bạn tải lên file .json hợp lệ.");
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    });
+</script>
+
+</body>
+</html>
