@@ -2,618 +2,993 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Công cụ tính điểm GPA & Quản lý</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Yu-Gi-Oh! Duel Field & Dual Timer Calculator</title>
     <style>
+        :root {
+            --p1-neon: #00f0ff;
+            --p1-glow: rgba(0, 240, 255, 0.4);
+            --p1-bg: rgba(0, 40, 80, 0.25);
+            
+            --p2-neon: #ff0066;
+            --p2-glow: rgba(255, 0, 102, 0.4);
+            --p2-bg: rgba(80, 0, 40, 0.25);
+            
+            --counter-color: #00ffaa;
+            --counter-glow: rgba(0, 255, 170, 0.5);
+            
+            --token-color: #ffd700;
+            --token-glow: rgba(255, 215, 0, 0.5);
+            
+            --bg-dark: #0a0712;
+            --panel-border: #2d1f4e;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 30% 20%, rgba(40, 20, 70, 0.7) 0%, transparent 60%),
+                radial-gradient(circle at 70% 80%, rgba(15, 50, 90, 0.7) 0%, transparent 60%);
+            color: #ffffff;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
-        .container {
-            max-width: 950px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+        /* THANH ĐIỀU KHIỂN TRUNG TÂM */
+        .center-tools {
+            background: rgba(12, 8, 22, 0.95);
+            border-top: 2px solid var(--panel-border);
+            border-bottom: 2px solid var(--panel-border);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            z-index: 100;
+            box-shadow: 0 0 25px rgba(0,0,0,0.9);
+            padding: 8px 15px;
         }
-        h2 {
-            text-align: center;
-            color: #2c3e50;
+
+        .util-btns {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
-        .form-group {
-            margin-bottom: 15px;
+
+        .tool-btn {
+            background: #1d1436;
+            border: 1px solid #48338a;
+            color: #ddd;
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.15s;
         }
-        label {
-            display: block;
+        .tool-btn:active {
+            background: #48338a;
+            color: #fff;
+            transform: scale(0.95);
+        }
+        .btn-reset-match {
+            background: linear-gradient(45deg, #d60056, #8500d6);
+            border: none;
+            color: white;
+            box-shadow: 0 0 12px rgba(214,0,86,0.4);
+        }
+
+        /* KHU VỰC SÂN ĐẤU */
+        .duel-arena {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .player-half {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 220px 1fr 240px;
+            grid-gap: 10px;
+            padding: 10px;
+            position: relative;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* XOAY NGƯỢC 180 ĐỘ CHO PLAYER 2 */
+        #player-2-side {
+            transform: rotate(180deg);
+            border-bottom: 1px solid rgba(255, 0, 102, 0.15);
+        }
+        #player-1-side {
+            border-top: 1px solid rgba(0, 240, 255, 0.15);
+        }
+
+        /* KHỐI HIỂN THỊ ĐIỂM GỐC (LP) VÀ ĐỒNG HỒ */
+        .lp-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            height: 100%;
+            padding-left: 10px;
+        }
+
+        .player-tag {
+            font-size: 0.9rem;
             font-weight: bold;
-            margin-bottom: 5px;
+            letter-spacing: 2px;
+            margin-bottom: 2px;
+        }
+        #player-1-side .player-tag { color: var(--p1-neon); text-shadow: 0 0 5px var(--p1-glow); }
+        #player-2-side .player-tag { color: var(--p2-neon); text-shadow: 0 0 5px var(--p2-glow); }
+
+        .lp-value {
+            font-size: 4.2rem;
+            font-weight: 900;
+            font-family: 'Courier New', Courier, monospace;
+            line-height: 1;
+            margin: 4px 0;
+        }
+        #player-1-side .lp-value { color: var(--p1-neon); text-shadow: 0 0 12px var(--p1-neon); }
+        #player-2-side .lp-value { color: var(--p2-neon); text-shadow: 0 0 12px var(--p2-neon); }
+        
+        .lp-value.dead {
+            color: #3a3a3a !important;
+            text-shadow: none !important;
+            text-decoration: line-through;
+        }
+
+        .change-log {
+            font-size: 1.1rem;
+            font-weight: bold;
+            height: 22px;
+            margin-bottom: 8px;
+            font-family: monospace;
+        }
+
+        /* WIDGET ĐỒNG HỒ ĐẾM NGƯỢC CÁ NHÂN */
+        .timer-widget {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(10, 5, 20, 0.8);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 6px 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.6);
+            width: 100%;
+            max-width: 180px;
+        }
+        #player-1-side .timer-widget { border-color: rgba(0, 240, 255, 0.3); }
+        #player-2-side .timer-widget { border-color: rgba(255, 0, 102, 0.3); }
+
+        .timer-display {
+            font-size: 1.5rem;
+            font-family: monospace;
+            font-weight: 900;
+            color: #ffcc00;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px rgba(255,204,0,0.5);
+            transition: color 0.3s;
+            margin-bottom: 4px;
+        }
+        .timer-controls {
+            display: flex;
+            gap: 4px;
+            width: 100%;
+            justify-content: space-between;
+        }
+        .t-btn {
+            flex: 1;
+            background: #2a1f42;
+            border: 1px solid #48338a;
+            color: #fff;
+            border-radius: 4px;
+            padding: 4px 0;
+            font-size: 0.7rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .t-btn:active { background: #48338a; }
+        .t-btn.play-btn { color: #44ff88; }
+        .t-btn.pause-btn { color: #ffcc00; }
+        .t-btn.add-btn { color: #00f0ff; }
+
+        /* THẢM ĐẤU */
+        .playmat-grid {
+            display: grid;
+            grid-template-rows: repeat(2, 1fr);
+            grid-gap: 8px;
+            height: 100%;
+            width: 100%;
         }
         
-        .searchable-select-wrapper {
+        .mat-row {
+            display: grid;
+            grid-template-columns: 1fr repeat(5, 1.2fr) 1fr;
+            grid-gap: 8px;
+        }
+
+        /* Ô CHỨA LÁ BÀI */
+        .card-zone {
+            border: 1px solid #322554;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 4px;
+            font-size: 0.65rem;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
             position: relative;
-            width: 100%;
+            min-height: 90px;
         }
-        .searchable-select-wrapper::after {
-            content: '▼';
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 12px;
-            color: #777;
+        
+        #player-1-side .card-zone { background: var(--p1-bg); border-color: rgba(0, 240, 255, 0.2); color: rgba(0, 240, 255, 0.7); }
+        #player-2-side .card-zone { background: var(--p2-bg); border-color: rgba(255, 0, 102, 0.2); color: rgba(255, 0, 102, 0.7); }
+
+        .zone-title {
+            font-size: 0.55rem;
+            opacity: 0.8;
+            text-transform: uppercase;
             pointer-events: none;
-        }
-        .searchable-select-wrapper input[type="text"] {
+            margin-bottom: 2px;
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 2px;
+        }
+
+        /* TOKEN */
+        .token-container {
+            width: 100%;
+            margin-top: 2px;
+            margin-bottom: 2px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 24px;
+        }
+        .btn-add-token {
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            color: var(--token-color);
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 2px;
+            transition: 0.2s;
+        }
+        .btn-add-token:active { background: rgba(255, 215, 0, 0.4); }
+        .token-display {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(20, 15, 10, 0.8);
+            border: 1px solid var(--token-color);
             border-radius: 4px;
-            box-sizing: border-box;
-            cursor: text;
-            font-size: 1em;
+            padding: 2px 4px;
+            width: 95%;
+            box-shadow: 0 0 5px var(--token-glow);
         }
-        .searchable-select-wrapper input[type="text"]:disabled {
-            background-color: #e9ecef;
-            cursor: not-allowed;
-            color: #777;
+        .token-display.active { display: flex; }
+        .token-stats {
+            font-size: 0.65rem;
+            color: var(--token-color);
+            line-height: 1.2;
+            cursor: pointer;
         }
-        .dropdown-list {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-top: none;
-            border-radius: 0 0 4px 4px;
-            max-height: 200px;
-            overflow-y: auto;
+        .btn-remove-token {
+            font-size: 0.5rem;
+            color: #ff4444;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            margin-top: 2px;
+            text-decoration: underline;
+        }
+
+        /* SPELL COUNTER */
+        .spell-counter-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: auto;
+        }
+        .counter-badge {
+            font-size: 0.8rem;
+            color: var(--counter-color);
+            text-shadow: 0 0 6px var(--counter-glow);
+            font-family: monospace;
+            font-weight: 900;
+            margin-bottom: 2px;
+            visibility: hidden;
+        }
+        .counter-badge.active { visibility: visible; }
+        .counter-btns {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            gap: 4px;
+        }
+        .c-btn {
+            flex: 1;
+            height: 18px;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .c-btn:active { background: rgba(255, 255, 255, 0.3); }
+        .c-btn.plus { color: #00ffaa; background: rgba(0, 255, 170, 0.15); }
+        .c-btn.minus { color: #ff5555; background: rgba(255, 85, 85, 0.15); }
+
+        /* BÀN PHÍM BẤM SỐ (KEYPAD) */
+        .calculator-box {
+            background: rgba(12, 6, 22, 0.85);
+            border: 1.5px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            width: 236px;
+        }
+        #player-1-side .calculator-box { border-color: rgba(0, 240, 255, 0.25); }
+        #player-2-side .calculator-box { border-color: rgba(255, 0, 102, 0.25); }
+
+        .screen-row {
+            display: flex;
+            width: 100%;
+            gap: 5px;
+            margin-bottom: 6px;
+        }
+
+        .input-screen {
+            flex: 1;
+            height: 36px;
+            background: #000000;
+            border-radius: 6px;
+            border: 1px solid #3a2566;
+            color: #00ffaa;
+            text-shadow: 0 0 6px rgba(0,255,170,0.6);
+            font-family: monospace;
+            font-size: 1.4rem;
+            text-align: right;
+            padding: 4px 8px;
+        }
+
+        .key-half {
+            width: 50px;
+            background: #3d2c16;
+            border-color: #694a22;
+            color: #ffcc00;
+            font-size: 1.1rem;
+        }
+        .key-half:active { background: #694a22; }
+
+        .keyboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 50px);
+            grid-gap: 5px;
+        }
+
+        .key {
+            height: 36px;
+            background: #20153d;
+            border: 1px solid #3f2b75;
+            color: #ffffff;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .key:active { background: #4b338c; }
+        .key-clear { background: #392c47; border-color: #5c4373; color: #ffcc00; }
+        .key-op { font-size: 1.2rem; }
+        .key-plus { background: #134226; border-color: #1f6b3e; color: #44ff88; }
+        .key-minus { background: #471523; border-color: #732037; color: #ff5577; }
+
+        /* MODAL & OVERLAYS */
+        .overlay-result, .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
             z-index: 1000;
             display: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            justify-content: center;
+            align-items: center;
         }
-        .dropdown-item {
-            padding: 10px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-        }
-        .dropdown-item:last-child { border-bottom: none; }
-        .dropdown-item:hover { background-color: #eaf2f8; color: #2980b9; font-weight: bold; }
         
-        input[type="number"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
+        .overlay-text-box {
+            background: rgba(12, 6, 26, 0.98);
+            border: 2px solid #8500d6;
+            box-shadow: 0 0 35px rgba(133,0,214,0.7);
+            padding: 25px 45px;
+            border-radius: 14px;
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            animation: popIn 0.25s ease-out;
         }
-        .info-box {
-            background: #eaf2f8;
-            padding: 10px;
-            border-left: 4px solid #3498db;
+
+        .modal-content {
+            background: #160e2a;
+            border: 2px solid var(--token-color);
+            box-shadow: 0 0 20px var(--token-glow);
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+            text-align: center;
+            animation: popIn 0.2s ease-out;
+        }
+        .modal-content h3 { margin: 0 0 10px 0; color: var(--token-color); }
+        .modal-content p { margin: 0 0 15px 0; font-size: 0.9rem; color: #aaa; }
+        .input-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
-            font-size: 0.9em;
         }
-        button, .btn-label, .btn-doc, .btn-contribute {
-            padding: 10px 15px;
-            color: white;
+        .input-group label { font-weight: bold; color: #fff; }
+        .input-group input {
+            width: 70%;
+            background: #000;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .modal-actions button {
+            padding: 8px 16px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 1em;
-            font-weight: bold;
-            text-align: center;
-            display: inline-block;
-            box-sizing: border-box;
-            text-decoration: none;
-        }
-        #addSubjectBtn {
-            width: 100%;
-            background-color: #27ae60;
-            margin-top: 10px;
-            transition: background-color 0.3s;
-        }
-        #addSubjectBtn:hover { filter: brightness(90%); }
-        
-        .btn-doc { background-color: #f39c12; width: 100%; margin-bottom: 15px; }
-        .btn-doc:hover { background-color: #d68910; }
-
-        .btn-doc-small {
-            background-color: #2980b9;
-            color: white;
-            padding: 6px 12px;
-            text-decoration: none;
-            border-radius: 4px;
-            font-size: 0.9em;
-            display: inline-block;
-        }
-        .btn-doc-small:hover { background-color: #1f618d; }
-
-        .btn-action-group { display: flex; gap: 5px; justify-content: center; }
-        .btn-edit { background-color: #f39c12; padding: 5px 10px; font-size: 0.9em; }
-        .btn-edit:hover { background-color: #d68910; }
-        .btn-danger { background-color: #e74c3c; padding: 5px 10px; font-size: 0.9em; }
-        .btn-danger:hover { background-color: #c0392b; }
-        
-        .btn-export { background-color: #3498db; width: 48%; }
-        .btn-export:hover { background-color: #2980b9; }
-        .btn-import { background-color: #9b59b6; width: 48%; float: right; }
-        .btn-import:hover { background-color: #8e44ad; }
-
-        .file-actions { margin-top: 20px; overflow: hidden; }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            font-size: 0.95em;
-        }
-        table, th, td { border: 1px solid #ddd; }
-        th, td { padding: 10px; text-align: center; }
-        th { background-color: #34495e; color: white; }
-        
-        .result-section {
-            margin-top: 20px;
-            padding: 15px;
-            background: #fdfefe;
-            border: 1px solid #d5dbdb;
-            border-radius: 4px;
-            text-align: center;
-            font-size: 1.2em;
             font-weight: bold;
         }
-        .footer-note {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 0.9em;
-            color: #7f8c8d;
-            border-top: 1px solid #eee;
-            padding-top: 15px;
+        .modal-actions .btn-cancel { background: #444; color: #fff; }
+        .modal-actions .btn-confirm { background: var(--token-color); color: #000; }
+
+        @keyframes popIn {
+            0% { transform: scale(0.6); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
-        .footer-note a { color: #e74c3c; text-decoration: none; font-weight: bold; }
-        .footer-note a:hover { text-decoration: underline; }
-        
-        #contributeSection { margin-top: 20px; text-align: center; display: none; }
-        .btn-contribute {
-            background-color: #1abc9c;
-            width: 100%;
-            font-size: 1.1em;
-            box-shadow: 0 4px 6px rgba(26, 188, 156, 0.3);
-            transition: transform 0.2s;
+
+        @media (max-width: 900px) {
+            body { height: auto; overflow: auto; }
+            .player-half {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                height: auto;
+                grid-gap: 15px;
+                padding: 15px;
+            }
+            .lp-panel { align-items: center; padding-left: 0; }
+            .timer-widget { max-width: 250px; }
+            .calculator-box { width: 100%; max-width: 280px; margin: 0 auto; }
+            .keyboard-grid { grid-template-columns: repeat(4, 1fr); width: 100%; }
+            .mat-row { grid-template-columns: repeat(7, 1fr); }
+            .card-zone { min-height: 80px; }
+            .zone-title { font-size: 0.5rem; }
         }
-        .btn-contribute:hover { background-color: #16a085; transform: translateY(-2px); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Hệ Thống Nhập Điểm & Tính GPA</h2>
-    
-    <div class="form-group">
-        <label for="subjectSearch">Tìm kiếm & Chọn môn học:</label>
-        <div class="searchable-select-wrapper">
-            <input type="text" id="subjectSearch" placeholder="-- Gõ để tìm môn học (VD: Hóa) --" autocomplete="off">
-            <div class="dropdown-list" id="dropdownList"></div>
+    <!-- P2 (XOAY NGƯỢC 180 ĐỘ) -->
+    <div id="player-2-side" class="player-half">
+        <div class="lp-panel">
+            <div class="player-tag">PLAYER 2 (OPPONENT)</div>
+            <div id="p2-lp" class="lp-value">8000</div>
+            <div id="p2-log" class="change-log"></div>
+            
+            <!-- ĐỒNG HỒ P2 -->
+            <div class="timer-widget">
+                <div class="timer-display" id="p2-timer-display">03:00</div>
+                <div class="timer-controls">
+                    <button class="t-btn play-btn" onclick="startTimer(2)">▶️ Play</button>
+                    <button class="t-btn pause-btn" onclick="pauseTimer(2)">⏸️ Pause</button>
+                    <button class="t-btn add-btn" onclick="addTime(2)">+30s</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="playmat-grid">
+            <div class="mat-row">
+                <div class="card-zone"><div class="zone-title">EXTRA</div></div>
+                <script>
+                    for(let i=1; i<=5; i++) {
+                        document.write(`
+                        <div class="card-zone">
+                            <div class="zone-title">S/T ${i}</div>
+                            <div class="spell-counter-container">
+                                <div class="counter-badge" id="p2-st${i}-badge">🔮 0</div>
+                                <div class="counter-btns">
+                                    <button class="c-btn minus" onclick="modZoneCounter('p2-st${i}-badge', -1)">-</button>
+                                    <button class="c-btn plus" onclick="modZoneCounter('p2-st${i}-badge', 1)">+</button>
+                                </div>
+                            </div>
+                        </div>`);
+                    }
+                </script>
+                <div class="card-zone"><div class="zone-title">DECK</div></div>
+            </div>
+            
+            <div class="mat-row">
+                <div class="card-zone">
+                    <div class="zone-title">FIELD</div>
+                    <div class="spell-counter-container">
+                        <div class="counter-badge" id="p2-field-badge">🔮 0</div>
+                        <div class="counter-btns">
+                            <button class="c-btn minus" onclick="modZoneCounter('p2-field-badge', -1)">-</button>
+                            <button class="c-btn plus" onclick="modZoneCounter('p2-field-badge', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                    for(let i=1; i<=5; i++) {
+                        document.write(`
+                        <div class="card-zone">
+                            <div class="zone-title">MONSTER ${i}</div>
+                            <div class="token-container">
+                                <button class="btn-add-token" id="p2-m${i}-add-token" onclick="openTokenModal('p2-m${i}', 'PLAYER 2 - MONSTER ${i}')">+ Token</button>
+                                <div class="token-display" id="p2-m${i}-token-display"></div>
+                            </div>
+                            <div class="spell-counter-container">
+                                <div class="counter-badge" id="p2-m${i}-badge">🔮 0</div>
+                                <div class="counter-btns">
+                                    <button class="c-btn minus" onclick="modZoneCounter('p2-m${i}-badge', -1)">-</button>
+                                    <button class="c-btn plus" onclick="modZoneCounter('p2-m${i}-badge', 1)">+</button>
+                                </div>
+                            </div>
+                        </div>`);
+                    }
+                </script>
+                <div class="card-zone"><div class="zone-title">GY</div></div>
+            </div>
+        </div>
+
+        <div class="calculator-box">
+            <div class="screen-row">
+                <div id="p2-screen" class="input-screen">0</div>
+                <button class="key key-half" onclick="halfLp(2)">½</button>
+            </div>
+            <div class="keyboard-grid">
+                <button class="key" onclick="numPress(2, 7)">7</button>
+                <button class="key" onclick="numPress(2, 8)">8</button>
+                <button class="key" onclick="numPress(2, 9)">9</button>
+                <button class="key key-clear" onclick="clearPress(2)">C</button>
+                <button class="key" onclick="numPress(2, 4)">4</button>
+                <button class="key" onclick="numPress(2, 5)">5</button>
+                <button class="key" onclick="numPress(2, 6)">6</button>
+                <button class="key key-op key-minus" onclick="applyLp(2, '-')">-</button>
+                <button class="key" onclick="numPress(2, 1)">1</button>
+                <button class="key" onclick="numPress(2, 2)">2</button>
+                <button class="key" onclick="numPress(2, 3)">3</button>
+                <button class="key key-op key-plus" style="grid-row: span 2; height: 100%;" onclick="applyLp(2, '+')">+</button>
+                <button class="key" onclick="numPress(2, 0)">0</button>
+                <button class="key" style="grid-column: span 2;" onclick="doubleZeroPress(2)">00</button>
+            </div>
         </div>
     </div>
 
-    <div id="subjectInfo" class="info-box" style="display: none;">
-        <strong>Thông tin:</strong> <span id="infoText"></span>
+    <!-- THANH TIỆN ÍCH TRUNG TÂM -->
+    <div class="center-tools">
+        <div class="util-btns">
+            <button class="tool-btn" onclick="rollDice()">🎲 Đổ Xúc Xắc</button>
+            <button class="tool-btn" onclick="flipCoin()">🪙 Tung Đồng Xu</button>
+            <button class="tool-btn" onclick="clearAllTokensAndCounters()">🗑️ Dọn Field</button>
+            <button class="tool-btn btn-reset-match" onclick="resetMatch()">🔄 Reset Trận Đấu</button>
+        </div>
     </div>
 
-    <a id="docBtn" href="#" target="_blank" class="btn-doc" style="display: none;">📚 Nhận tài liệu môn học</a>
-
-    <div class="form-group" id="processGroup" style="display: none;">
-        <label for="processScore">Điểm quá trình (Hệ số <span id="processWeightText"></span>):</label>
-        <input type="number" id="processScore" min="0" max="10" step="0.1" placeholder="Nhập điểm từ 0-10">
-    </div>
-
-    <div class="form-group" id="finalGroup" style="display: none;">
-        <label for="finalScore">Điểm cuối kì (Hệ số <span id="finalWeightText"></span>):</label>
-        <input type="number" id="finalScore" min="0" max="10" step="0.1" placeholder="Nhập điểm từ 0-10">
-    </div>
-
-    <button id="addSubjectBtn" style="display: none;">Thêm môn học vào bảng tính</button>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Môn học</th>
-                <th>Mã MH</th>
-                <th>Tín chỉ</th>
-                <th>Điểm hệ 10</th>
-                <th>Điểm chữ</th>
-                <th>Điểm hệ 4.0</th>
-                <th>Tài liệu</th>
-                <th>Thao tác</th>
-            </tr>
-        </thead>
-        <tbody id="resultTableBody">
-            <!-- Dữ liệu -->
-        </tbody>
-    </table>
-
-    <div class="result-section">
-        Tổng số tín chỉ tích lũy: <span id="totalCreditsOut" style="color: #2980b9;">0</span> <br><br>
-        Điểm Tổng Kết Trung Bình (GPA): <span id="gpaOut" style="color: #c0392b;">0.00</span>
-    </div>
-
-    <div class="file-actions">
-        <button id="exportBtn" class="btn-export">💾 Lưu file dữ liệu</button>
-        <label for="importBtn" class="btn-label btn-import">📂 Tải lên file dữ liệu</label>
-        <input type="file" id="importBtn" accept=".json" style="display: none;">
-    </div>
-
-    <div class="footer-note">
-        Phát hiện lỗi hệ thống hoặc cần hỗ trợ? <a href="https://facebook.com/x2r2r9" target="_blank">Báo lỗi tại đây</a>.
-    </div>
-
-    <div id="contributeSection">
-        <a href="https://docs.google.com/forms/d/e/1FAIpQLSc43VxdnS5ormWxXYs9KZuEnoZRZCKxiHHsi2AKO7eiI348Cw/viewform" target="_blank" class="btn-contribute">
-             Chúc mừng bạn đạt điểm A! Nhấn vào đây để đóng góp tài liệu cho khóa sau nha :>
-        </a>
-    </div>
-</div>
-
-<script>
-    const database = [
-         { id: 1, name: 'Đại số', code: 'MI1036', credits: 4, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=559914829#gid=559914829' },
-  { id: 2, name: 'Hóa I', code: 'CH1018E', credits: 2, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?gid=71862001#gid=71862001' },
-  { id: 3, name: 'Tư tưởng Hồ Chí Minh', code: 'SSH1151', credits: 2, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?gid=1595122547#gid=1595122547' },
-  { id: 4, name: 'Vật lý đại cương 1', code: 'PH1016', credits: 4, weight: 0.6, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1958786211#gid=1958786211' },
-  { id: 5, name: 'Thí nghiệm Hóa Lý', code: 'CH3082E', credits: 1, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1278635437#gid=1278635437' },
-  { id: 6, name: 'Pháp luật đại cương', code: 'EM1170', credits: 2, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1640084910#gid=1640084910' },
-  { id: 7, name: 'Vật lý đại cương 2', code: 'PH1026', credits: 4, weight: 0.6, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=399951441#gid=399951441' },
-  { id: 8, name: 'Thí nghiệm Hóa phân tích', code: 'CH3318E', credits: 1, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1128729983#gid=1128729983' },
-  { id: 9, name: 'Kinh tế chính trị', code: 'SSH1121', credits: 2, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=275427903#gid=275427903' },
-  { id: 10, name: 'Tin học đại cương', code: 'IT1016', credits: 3, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=836243525#gid=836243525' },
-  { id: 11, name: 'Hóa Lý', code: 'CH3081E', credits: 2, weight: 0.6, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1920708441#gid=1920708441' },
-  { id: 12, name: 'Giải tích I', code: 'MI1016', credits: 4, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=254104075#gid=254104075' },
-  { id: 13, name: 'Giải tích II', code: 'MI1026', credits: 4, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=154393264#gid=154393264' },
-  { id: 14, name: 'Hóa phân tích', code: 'CH3316E', credits: 2, weight: 0.7, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1341248812#gid=1341248812' },
-  { id: 15, name: 'Hoá Sinh', code: 'BF2702E', credits: 4, weight: 0.7, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1414120560#gid=1414120560' },
-  { id: 16, name: 'Thí nghiệm Hoá Sinh', code: 'BF2703E', credits: 2, weight: 0.7, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1661701860#gid=1661701860' },
-  { id: 17, name: 'Hoá Hữu Cơ', code: 'CH3224E', credits: 2, weight: 0.7, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=836077525#gid=836077525' },
-  { id: 18, name: 'Tâm lý học ứng dụng', code: 'ED3280', credits: 2, weight: 0.7, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=985842818#gid=985842818' },
-  { id: 19, name: 'Về kĩ thuật', code: 'ME2016', credits: 2, weight: 0.7, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=1916728305#gid=1916728305' },
-  { id: 20, name: 'Thiết kế quảng bá sản phẩm', code: 'ME3124', credits: 2, weight: 0.5, docUrl: 'https://docs.google.com/spreadsheets/d/1YVj9PWSL9P975l1VZZDSiy-Lae0Zf9mzrjRsBh0msjI/edit?pli=1&gid=2088698558#gid=2088698558' },
-  ];
-
-
-    let addedSubjectsList = [];
-    let editIndex = -1;
-    let currentSelectedSubjectId = null;
-
-    const subjectSearch = document.getElementById('subjectSearch');
-    const dropdownList = document.getElementById('dropdownList');
-    const subjectInfo = document.getElementById('subjectInfo');
-    const infoText = document.getElementById('infoText');
-    const docBtn = document.getElementById('docBtn');
-    const processGroup = document.getElementById('processGroup');
-    const finalGroup = document.getElementById('finalGroup');
-    const processScore = document.getElementById('processScore');
-    const finalScore = document.getElementById('finalScore');
-    const processWeightText = document.getElementById('processWeightText');
-    const finalWeightText = document.getElementById('finalWeightText');
-    const addSubjectBtn = document.getElementById('addSubjectBtn');
-    const resultTableBody = document.getElementById('resultTableBody');
-    const totalCreditsOut = document.getElementById('totalCreditsOut');
-    const gpaOut = document.getElementById('gpaOut');
-    const exportBtn = document.getElementById('exportBtn');
-    const importBtn = document.getElementById('importBtn');
-    const contributeSection = document.getElementById('contributeSection');
-
-    function renderDropdown(filterText = '') {
-        dropdownList.innerHTML = '';
-        
-        const filtered = database.filter(sub => 
-            sub.name.toLowerCase().includes(filterText.toLowerCase()) || 
-            sub.code.toLowerCase().includes(filterText.toLowerCase())
-        );
-
-        if(filtered.length === 0) {
-            const emptyDiv = document.createElement('div');
-            emptyDiv.className = 'dropdown-item';
-            emptyDiv.style.color = '#e74c3c';
-            emptyDiv.textContent = 'Không tìm thấy môn học nào...';
-            dropdownList.appendChild(emptyDiv);
-            return;
-        }
-
-        filtered.forEach(sub => {
-            const div = document.createElement('div');
-            div.className = 'dropdown-item';
-            div.textContent = `${sub.name} (${sub.code})`;
-            div.onclick = () => {
-                selectSubject(sub.id);
-                dropdownList.style.display = 'none';
-            };
-            dropdownList.appendChild(div);
-        });
-    }
-
-    subjectSearch.addEventListener('focus', () => {
-        renderDropdown(subjectSearch.value);
-        dropdownList.style.display = 'block';
-    });
-
-    subjectSearch.addEventListener('input', (e) => {
-        currentSelectedSubjectId = null; 
-        renderDropdown(e.target.value);
-        dropdownList.style.display = 'block';
-    });
-
-    document.addEventListener('click', (e) => {
-        if(!document.querySelector('.searchable-select-wrapper').contains(e.target)) {
-            dropdownList.style.display = 'none';
-        }
-    });
-
-    function selectSubject(id) {
-        currentSelectedSubjectId = id;
-        const subject = database.find(s => s.id === id);
-
-        if (subject) {
-            subjectSearch.value = `${subject.name} (${subject.code})`;
+    <!-- P1 (HƯỚNG THUẬN) -->
+    <div id="player-1-side" class="player-half">
+        <div class="lp-panel">
+            <div class="player-tag">PLAYER 1 (YOU)</div>
+            <div id="p1-lp" class="lp-value">8000</div>
+            <div id="p1-log" class="change-log"></div>
             
-            subjectInfo.style.display = 'block';
-            infoText.innerHTML = `${subject.name} - Mã: ${subject.code} - Tín chỉ: ${subject.credits} - Trọng số cuối kì: ${subject.weight}`;
-            
-            if(subject.docUrl && subject.docUrl.trim() !== '') {
-                docBtn.style.display = 'block';
-                docBtn.href = subject.docUrl;
-            } else {
-                docBtn.style.display = 'none';
-            }
+            <!-- ĐỒNG HỒ P1 -->
+            <div class="timer-widget">
+                <div class="timer-display" id="p1-timer-display">03:00</div>
+                <div class="timer-controls">
+                    <button class="t-btn play-btn" onclick="startTimer(1)">▶️ Play</button>
+                    <button class="t-btn pause-btn" onclick="pauseTimer(1)">⏸️ Pause</button>
+                    <button class="t-btn add-btn" onclick="addTime(1)">+30s</button>
+                </div>
+            </div>
+        </div>
 
-            finalGroup.style.display = 'block';
-            finalWeightText.textContent = subject.weight;
-            addSubjectBtn.style.display = 'block';
-
-            if (editIndex === -1) {
-                processScore.value = '';
-                finalScore.value = '';
-            }
-
-            if (subject.weight === 1.0) {
-                processGroup.style.display = 'none';
-            } else {
-                processGroup.style.display = 'block';
-                processWeightText.textContent = Math.round((1 - subject.weight) * 10) / 10; 
-            }
-        }
-    }
-
-
-    function calculateGrade(totalScore10, pScore, fScore, weight) {
-        let letter = '';
-        let scale4 = 0.0;
-
-        // Xác định xem môn học có bị điểm liệt (dưới 3) ở bất kỳ học phần nào không
-        const isLietQuaTrinh = (weight !== 1.0 && pScore < 3);
-        const isLietCuoiKi = (fScore < 3);
-
-        // Bất chấp điểm tổng kết là bao nhiêu, nếu dính điểm liệt thì tự động F và 0.0
-        if (isLietQuaTrinh || isLietCuoiKi || totalScore10 < 4.0) {
-            letter = 'F';
-            scale4 = 0.0;
-        } else if (totalScore10 >= 9.5) { letter = 'A+'; scale4 = 4.0; }
-        else if (totalScore10 >= 8.5) { letter = 'A'; scale4 = 4.0; }
-        else if (totalScore10 >= 8.0) { letter = 'B+'; scale4 = 3.5; }
-        else if (totalScore10 >= 7.0) { letter = 'B'; scale4 = 3.0; }
-        else if (totalScore10 >= 6.5) { letter = 'C+'; scale4 = 2.5; }
-        else if (totalScore10 >= 5.5) { letter = 'C'; scale4 = 2.0; }
-        else if (totalScore10 >= 5.0) { letter = 'D+'; scale4 = 1.5; }
-        else if (totalScore10 >= 4.0) { letter = 'D'; scale4 = 1.0; }
-
-        return { letter, scale4 };
-    }
-
-    addSubjectBtn.addEventListener('click', function() {
-        if (!currentSelectedSubjectId) {
-            alert('Vui lòng chọn một môn học hợp lệ từ danh sách thả xuống!');
-            return;
-        }
-
-        const subject = database.find(s => s.id === currentSelectedSubjectId);
-        let pScore = 0;
-        const fScore = parseFloat(finalScore.value);
-
-        if (isNaN(fScore) || fScore < 0 || fScore > 10) {
-            alert('Vui lòng nhập điểm cuối kì hợp lệ (0-10)');
-            return;
-        }
-
-        if (subject.weight !== 1.0) {
-            pScore = parseFloat(processScore.value);
-            if (isNaN(pScore) || pScore < 0 || pScore > 10) {
-                alert('Vui lòng nhập điểm quá trình hợp lệ (0-10)');
-                return;
-            }
-        }
-
-        const pWeight = 1 - subject.weight;
-
-        let total10 = (pScore * pWeight) + (fScore * subject.weight);
-        total10 = Math.round(total10 * 10) / 10;
-
-        // Chuyển điểm hệ 10
-        const grade = calculateGrade(total10, pScore, fScore, subject.weight);
-
-        const newSubjectData = {
-            id: subject.id,
-            name: subject.name,
-            code: subject.code,
-            credits: subject.credits,
-            weight: subject.weight,
-            docUrl: subject.docUrl, 
-            pScore: pScore, 
-            fScore: fScore,
-            score10: total10, 
-            letter: grade.letter,
-            scale4: grade.scale4
-        };
-
-        if (editIndex === -1) {
-            addedSubjectsList.push(newSubjectData);
-        } else {
-            addedSubjectsList[editIndex] = newSubjectData;
-            editIndex = -1;
-            addSubjectBtn.textContent = "Thêm môn học vào bảng tính";
-            addSubjectBtn.style.backgroundColor = "#27ae60"; 
-            subjectSearch.disabled = false;
-        }
-
-        subjectSearch.value = '';
-        currentSelectedSubjectId = null;
-        subjectInfo.style.display = 'none';
-        docBtn.style.display = 'none';
-        processGroup.style.display = 'none';
-        finalGroup.style.display = 'none';
-        addSubjectBtn.style.display = 'none';
-        
-        updateUI();
-    });
-
-    window.editSubject = function(index) {
-        const item = addedSubjectsList[index];
-        editIndex = index; 
-
-        subjectSearch.disabled = true; 
-        selectSubject(item.id);
-
-        if (item.weight !== 1.0) {
-            processScore.value = item.pScore !== undefined ? item.pScore : '';
-        }
-        finalScore.value = item.fScore !== undefined ? item.fScore : '';
-
-        addSubjectBtn.textContent = "Cập nhật kết quả môn học";
-        addSubjectBtn.style.backgroundColor = "#2980b9"; 
-
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    window.removeSubject = function(index) {
-        if (editIndex === index) {
-            alert("Bạn đang sửa môn này. Vui lòng hoàn tất hoặc tải lại trang.");
-            return;
-        }
-        
-        addedSubjectsList.splice(index, 1);
-        
-        if (editIndex > index) {
-            editIndex--;
-        }
-
-        updateUI();
-    };
-
-    function updateUI() {
-        renderTable();
-        calculateGPA();
-        checkExcellentGrade();
-    }
-
-    function renderTable() {
-        resultTableBody.innerHTML = '';
-        addedSubjectsList.forEach((item, index) => {
-            const tr = document.createElement('tr');
-            
-            let docContent = '';
-            if (item.docUrl && item.docUrl.trim() !== '') {
-                docContent = `<a href="${item.docUrl}" target="_blank" class="btn-doc-small">Mở file</a>`;
-            } else {
-                docContent = `<span style="color: #7f8c8d; font-style: italic;">Không có</span>`;
-            }
-
-            tr.innerHTML = `
-                <td>${item.name}</td>
-                <td>${item.code}</td>
-                <td>${item.credits}</td>
-                <td>${item.score10}</td>
-                <td><strong>${item.letter}</strong></td>
-                <td><strong>${item.scale4}</strong></td>
-                <td>${docContent}</td> 
-                <td>
-                    <div class="btn-action-group">
-                        <button class="btn-edit" onclick="editSubject(${index})">Sửa</button>
-                        <button class="btn-danger" onclick="removeSubject(${index})">Xóa</button>
+        <div class="playmat-grid">
+            <div class="mat-row">
+                <div class="card-zone">
+                    <div class="zone-title">FIELD</div>
+                    <div class="spell-counter-container">
+                        <div class="counter-badge" id="p1-field-badge">🔮 0</div>
+                        <div class="counter-btns">
+                            <button class="c-btn minus" onclick="modZoneCounter('p1-field-badge', -1)">-</button>
+                            <button class="c-btn plus" onclick="modZoneCounter('p1-field-badge', 1)">+</button>
+                        </div>
                     </div>
-                </td>
-            `;
-            resultTableBody.appendChild(tr);
-        });
-    }
+                </div>
+                <script>
+                    for(let i=1; i<=5; i++) {
+                        document.write(`
+                        <div class="card-zone">
+                            <div class="zone-title">MONSTER ${i}</div>
+                            <div class="token-container">
+                                <button class="btn-add-token" id="p1-m${i}-add-token" onclick="openTokenModal('p1-m${i}', 'PLAYER 1 - MONSTER ${i}')">+ Token</button>
+                                <div class="token-display" id="p1-m${i}-token-display"></div>
+                            </div>
+                            <div class="spell-counter-container">
+                                <div class="counter-badge" id="p1-m${i}-badge">🔮 0</div>
+                                <div class="counter-btns">
+                                    <button class="c-btn minus" onclick="modZoneCounter('p1-m${i}-badge', -1)">-</button>
+                                    <button class="c-btn plus" onclick="modZoneCounter('p1-m${i}-badge', 1)">+</button>
+                                </div>
+                            </div>
+                        </div>`);
+                    }
+                </script>
+                <div class="card-zone"><div class="zone-title">GY</div></div>
+            </div>
 
-    function calculateGPA() {
-        let totalCredits = 0;
-        let totalPoints = 0;
+            <div class="mat-row">
+                <div class="card-zone"><div class="zone-title">EXTRA</div></div>
+                <script>
+                    for(let i=1; i<=5; i++) {
+                        document.write(`
+                        <div class="card-zone">
+                            <div class="zone-title">S/T ${i}</div>
+                            <div class="spell-counter-container">
+                                <div class="counter-badge" id="p1-st${i}-badge">🔮 0</div>
+                                <div class="counter-btns">
+                                    <button class="c-btn minus" onclick="modZoneCounter('p1-st${i}-badge', -1)">-</button>
+                                    <button class="c-btn plus" onclick="modZoneCounter('p1-st${i}-badge', 1)">+</button>
+                                </div>
+                            </div>
+                        </div>`);
+                    }
+                </script>
+                <div class="card-zone"><div class="zone-title">DECK</div></div>
+            </div>
+        </div>
 
-        addedSubjectsList.forEach(item => {
-            totalCredits += item.credits;
-            totalPoints += (item.scale4 * item.credits);
-        });
+        <div class="calculator-box">
+            <div class="screen-row">
+                <div id="p1-screen" class="input-screen">0</div>
+                <button class="key key-half" onclick="halfLp(1)">½</button>
+            </div>
+            <div class="keyboard-grid">
+                <button class="key" onclick="numPress(1, 7)">7</button>
+                <button class="key" onclick="numPress(1, 8)">8</button>
+                <button class="key" onclick="numPress(1, 9)">9</button>
+                <button class="key key-clear" onclick="clearPress(1)">C</button>
+                <button class="key" onclick="numPress(1, 4)">4</button>
+                <button class="key" onclick="numPress(1, 5)">5</button>
+                <button class="key" onclick="numPress(1, 6)">6</button>
+                <button class="key key-op key-minus" onclick="applyLp(1, '-')">-</button>
+                <button class="key" onclick="numPress(1, 1)">1</button>
+                <button class="key" onclick="numPress(1, 2)">2</button>
+                <button class="key" onclick="numPress(1, 3)">3</button>
+                <button class="key key-op key-plus" style="grid-row: span 2; height: 100%;" onclick="applyLp(1, '+')">+</button>
+                <button class="key" onclick="numPress(1, 0)">0</button>
+                <button class="key" style="grid-column: span 2;" onclick="doubleZeroPress(1)">00</button>
+            </div>
+        </div>
+    </div>
 
-        const gpa = totalCredits === 0 ? 0 : (totalPoints / totalCredits).toFixed(2);
-        
-        totalCreditsOut.textContent = totalCredits;
-        gpaOut.textContent = gpa;
-    }
+    <!-- OVERLAYS: THÔNG BÁO -->
+    <div id="overlay-result" class="overlay-result">
+        <div class="overlay-text-box" id="overlay-text"></div>
+    </div>
 
-    function checkExcellentGrade() {
-        const hasA = addedSubjectsList.some(item => item.letter === 'A' || item.letter === 'A+');
-        if (hasA) {
-            contributeSection.style.display = 'block';
-        } else {
-            contributeSection.style.display = 'none';
-        }
-    }
+    <!-- MODAL: TẠO/SỬA TOKEN -->
+    <div id="token-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>TẠO TOKEN</h3>
+            <p id="token-zone-label">Vùng: ...</p>
+            <div class="input-group">
+                <label>⚔️ ATK:</label>
+                <input type="number" id="token-atk" value="0" min="0" max="99999" onfocus="this.select()">
+            </div>
+            <div class="input-group">
+                <label>🛡️ DEF:</label>
+                <input type="number" id="token-def" value="0" min="0" max="99999" onfocus="this.select()">
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeTokenModal()" class="btn-cancel">Hủy</button>
+                <button onclick="confirmToken()" class="btn-confirm">Xác nhận</button>
+            </div>
+        </div>
+    </div>
 
-    exportBtn.addEventListener('click', function() {
-        if(addedSubjectsList.length === 0) {
-            alert("Chưa có dữ liệu để lưu!");
-            return;
-        }
-        const dataStr = JSON.stringify(addedSubjectsList, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "ket_qua_gpa.json";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    });
+    <script>
+        let gameData = { 1: { lp: 8000, input: "0" }, 2: { lp: 8000, input: "0" } };
+        let countersState = {};
+        let currentTokenZone = "";
 
-    importBtn.addEventListener('change', function(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep(freq, type, duration) {
             try {
-                const importedData = JSON.parse(e.target.result);
-                if(Array.isArray(importedData)) {
-                    addedSubjectsList = importedData;
-                    updateUI();
-                    alert("Đã tải dữ liệu thành công!");
-                } else {
-                    alert("File không đúng định dạng dữ liệu GPA.");
-                }
-            } catch (error) {
-                alert("Lỗi đọc file: Đảm bảo bạn tải lên file .json hợp lệ.");
-            }
-        };
-        reader.readAsText(file);
-        event.target.value = '';
-    });
-</script>
+                let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+                osc.type = type || 'sine'; osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+        function playClick() { playBeep(550, 'sine', 0.06); }
+        function playCounterClick() { playBeep(750, 'triangle', 0.08); }
+        function playUpdate() { playBeep(840, 'sine', 0.12); }
+        function playTimeUp() { 
+            playBeep(300, 'sawtooth', 0.4);
+            setTimeout(() => playBeep(300, 'sawtooth', 0.4), 500);
+            setTimeout(() => playBeep(300, 'sawtooth', 1.0), 1000);
+        }
 
+        /* ====== LOGIC ĐỒNG HỒ ĐẾM NGƯỢC ĐỘC LẬP ====== */
+        let timers = {
+            1: { duration: 180, interval: null, isRunning: false },
+            2: { duration: 180, interval: null, isRunning: false }
+        };
+
+        function updateTimerDisplay(player) {
+            let m = Math.floor(timers[player].duration / 60);
+            let s = timers[player].duration % 60;
+            let displayString = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+            document.getElementById(`p${player}-timer-display`).innerText = displayString;
+        }
+
+        function startTimer(player) {
+            if (timers[player].isRunning || timers[player].duration <= 0) return;
+            playClick();
+            timers[player].isRunning = true;
+            document.getElementById(`p${player}-timer-display`).style.color = "#ffcc00"; 
+            
+            timers[player].interval = setInterval(() => {
+                timers[player].duration--;
+                updateTimerDisplay(player);
+                
+                if (timers[player].duration <= 0) {
+                    clearInterval(timers[player].interval);
+                    timers[player].isRunning = false;
+                    document.getElementById(`p${player}-timer-display`).style.color = "#ff4444"; 
+                    playTimeUp();
+                    showOverlay(`⏰ HẾT GIỜ CỦA PLAYER ${player}!`);
+                    hideOverlayLater();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer(player) {
+            if (!timers[player].isRunning) return;
+            playClick();
+            clearInterval(timers[player].interval);
+            timers[player].isRunning = false;
+        }
+
+        function addTime(player) {
+            playClick();
+            timers[player].duration += 30; // Thêm 30s
+            document.getElementById(`p${player}-timer-display`).style.color = "#ffcc00"; 
+            updateTimerDisplay(player);
+        }
+
+        /* ====== TOKEN ====== */
+        function openTokenModal(zoneId, label) {
+            playClick(); currentTokenZone = zoneId;
+            document.getElementById('token-zone-label').innerText = `Vùng: ${label}`;
+            let displayEl = document.getElementById(`${zoneId}-token-display`);
+            if(displayEl.classList.contains('active')) {
+                document.getElementById('token-atk').value = displayEl.getAttribute('data-atk') || "0";
+                document.getElementById('token-def').value = displayEl.getAttribute('data-def') || "0";
+            } else {
+                document.getElementById('token-atk').value = "0"; document.getElementById('token-def').value = "0";
+            }
+            document.getElementById('token-modal').style.display = 'flex';
+        }
+        function closeTokenModal() { playClick(); document.getElementById('token-modal').style.display = 'none'; }
+        function confirmToken() {
+            playUpdate();
+            let atk = document.getElementById('token-atk').value || 0; let def = document.getElementById('token-def').value || 0;
+            let displayEl = document.getElementById(`${currentTokenZone}-token-display`);
+            let addBtn = document.getElementById(`${currentTokenZone}-add-token`);
+            displayEl.setAttribute('data-atk', atk); displayEl.setAttribute('data-def', def);
+            displayEl.innerHTML = `
+                <div class="token-stats" onclick="openTokenModal('${currentTokenZone}', 'Sửa Token')">
+                    ⚔️${atk}<br>🛡️${def}
+                </div>
+                <button class="btn-remove-token" onclick="removeToken(event, '${currentTokenZone}')">Xoá Token</button>
+            `;
+            displayEl.classList.add('active'); addBtn.style.display = 'none'; closeTokenModal();
+        }
+        function removeToken(event, zoneId) {
+            event.stopPropagation(); playClick();
+            let displayEl = document.getElementById(`${zoneId}-token-display`);
+            let addBtn = document.getElementById(`${zoneId}-add-token`);
+            displayEl.classList.remove('active'); displayEl.innerHTML = "";
+            displayEl.removeAttribute('data-atk'); displayEl.removeAttribute('data-def');
+            addBtn.style.display = 'inline-block';
+        }
+
+        /* ====== COUNTER ====== */
+        function modZoneCounter(badgeId, amount) {
+            playCounterClick();
+            if (!countersState[badgeId]) countersState[badgeId] = 0;
+            countersState[badgeId] += amount;
+            if (countersState[badgeId] < 0) countersState[badgeId] = 0; 
+            let badgeEl = document.getElementById(badgeId);
+            badgeEl.innerText = `🔮 ${countersState[badgeId]}`;
+            if (countersState[badgeId] > 0) { badgeEl.classList.add('active'); } else { badgeEl.classList.remove('active'); }
+        }
+        function clearAllTokensAndCounters() {
+            if (confirm("Dọn dẹp sạch sẽ toàn bộ Counter và Token trên sân?")) {
+                playUpdate();
+                document.querySelectorAll('.counter-badge').forEach(b => { b.innerText = "🔮 0"; b.classList.remove('active'); });
+                countersState = {};
+                document.querySelectorAll('.token-display').forEach(t => { t.classList.remove('active'); t.innerHTML = ""; });
+                document.querySelectorAll('.btn-add-token').forEach(b => { b.style.display = 'inline-block'; });
+            }
+        }
+
+        /* ====== ĐIỂM GỐC ====== */
+        function numPress(player, val) {
+            playClick(); let current = gameData[player].input;
+            if (current === "0") { gameData[player].input = val.toString(); } 
+            else if (current.length < 5) { gameData[player].input += val.toString(); }
+            updateScreen(player);
+        }
+        function doubleZeroPress(player) {
+            playClick(); let current = gameData[player].input;
+            if (current !== "0" && current.length < 4) { gameData[player].input += "00"; }
+            updateScreen(player);
+        }
+        function clearPress(player) { playClick(); gameData[player].input = "0"; updateScreen(player); }
+        function updateScreen(player) { document.getElementById(`p${player}-screen`).innerText = gameData[player].input; }
+
+        function applyLp(player, operator) {
+            let amount = parseInt(gameData[player].input);
+            if (amount === 0 || isNaN(amount)) return;
+            playUpdate();
+            let oldLp = gameData[player].lp;
+            let logEl = document.getElementById(`p${player}-log`);
+
+            if (operator === '+') {
+                gameData[player].lp += amount; logEl.innerText = `+${amount}`; logEl.style.color = "#44ff88";
+            } else {
+                gameData[player].lp -= amount; logEl.innerText = `-${amount}`; logEl.style.color = "#ff5577";
+            }
+            updateLpDisplay(player, oldLp, logEl);
+        }
+
+        function halfLp(player) {
+            let oldLp = gameData[player].lp;
+            if (oldLp <= 0) return;
+            playUpdate();
+            gameData[player].lp = Math.ceil(oldLp / 2);
+            let logEl = document.getElementById(`p${player}-log`);
+            logEl.innerText = `÷ 2 (Half)`; logEl.style.color = "#ffcc00";
+            updateLpDisplay(player, oldLp, logEl);
+        }
+
+        function updateLpDisplay(player, oldLp, logEl) {
+            if (gameData[player].lp <= 0) {
+                gameData[player].lp = 0;
+                document.getElementById(`p${player}-lp`).classList.add('dead');
+            } else {
+                document.getElementById(`p${player}-lp`).classList.remove('dead');
+            }
+            animateLp(document.getElementById(`p${player}-lp`), oldLp, gameData[player].lp);
+            gameData[player].input = "0";
+            updateScreen(player);
+            setTimeout(() => { 
+                if (logEl.innerText.includes(Math.abs(gameData[player].lp - oldLp).toString()) || logEl.innerText.includes("Half")) { logEl.innerText = ""; } 
+            }, 3500);
+        }
+
+        function animateLp(element, start, end) {
+            let duration = 350; let startTime = null;
+            function process(timestamp) {
+                if (!startTime) startTime = timestamp;
+                let progress = Math.min((timestamp - startTime) / duration, 1);
+                let currentVal = Math.floor(start + progress * (end - start));
+                element.innerText = currentVal;
+                if (progress < 1) { window.requestAnimationFrame(process); } else { element.innerText = end; }
+            }
+            window.requestAnimationFrame(process);
+        }
+
+        /* ====== TIỆN ÍCH ====== */
+        function rollDice() {
+            playClick(); showOverlay("🎲 Đang lắc xúc xắc...");
+            setTimeout(() => {
+                let res = Math.floor(Math.random() * 6) + 1;
+                showOverlay(`🎲 Kết quả: Mặt ${res}`); hideOverlayLater();
+            }, 500);
+        }
+        function flipCoin() {
+            playClick(); showOverlay("🪙 Đang tung đồng xu...");
+            setTimeout(() => {
+                let res = Math.random() < 0.5 ? "SẤP (Heads)" : "NGỬA (Tails)";
+                showOverlay(`🪙 Kết quả: ${res}`); hideOverlayLater();
+            }, 500);
+        }
+        function showOverlay(text) {
+            document.getElementById('overlay-text').innerText = text;
+            document.getElementById('overlay-result').style.display = 'flex';
+        }
+        function hideOverlayLater() { setTimeout(() => { document.getElementById('overlay-result').style.display = 'none'; }, 2000); }
+        
+        function resetMatch() {
+            if (confirm("Thiết lập lại trận đấu? Toàn bộ LP, Counter, Token và Thời gian sẽ được đặt lại.")) {
+                playUpdate();
+                // Reset LP
+                gameData = { 1: { lp: 8000, input: "0" }, 2: { lp: 8000, input: "0" } };
+                document.getElementById('p1-lp').innerText = "8000"; document.getElementById('p2-lp').innerText = "8000";
+                document.getElementById('p1-lp').classList.remove('dead'); document.getElementById('p2-lp').classList.remove('dead');
+                document.getElementById('p1-log').innerText = ""; document.getElementById('p2-log').innerText = "";
+                updateScreen(1); updateScreen(2);
+                
+                // Reset Counter & Token
+                document.querySelectorAll('.counter-badge').forEach(b => { b.innerText = "🔮 0"; b.classList.remove('active'); });
+                countersState = {};
+                document.querySelectorAll('.token-display').forEach(t => { t.classList.remove('active'); t.innerHTML = ""; });
+                document.querySelectorAll('.btn-add-token').forEach(b => { b.style.display = 'inline-block'; });
+
+                // Reset Timers
+                [1, 2].forEach(p => {
+                    pauseTimer(p);
+                    timers[p].duration = 180;
+                    document.getElementById(`p${p}-timer-display`).style.color = "#ffcc00";
+                    updateTimerDisplay(p);
+                });
+            }
+        }
+    </script>
 </body>
 </html>
